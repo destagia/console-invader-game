@@ -4,7 +4,7 @@ import time
 game = Game()
 enemy_pool = EnemyPool()
 
-player = Player()
+player = Player(game)
 controller = AiController(game, player)
 
 player.position.x = int(Game.DISPLAY_WIDTH / 2)

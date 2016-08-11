@@ -7,6 +7,7 @@ class Game():
     def __init__(self):
         self.__game_objects = []
         self.__hr = " " + "ー" * Game.DISPLAY_WIDTH
+        self.__point = 0
         self.update_display()
 
     def add(self, game_object):
@@ -18,6 +19,12 @@ class Game():
 
     def update_display(self):
         self.__filled_display = self.__create_filled_display()
+
+    def add_point(self, value):
+        self.__point += value
+
+    def total_point(self):
+        return self.__point
 
     def render(self):
         self.update_display()

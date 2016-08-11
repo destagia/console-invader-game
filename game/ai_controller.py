@@ -57,6 +57,7 @@ class AiController():
             "action": action,
         })
         print(q_value.data)
+
         if action == 0:
             self.__player.move_left()
         elif action == 1:
@@ -64,6 +65,9 @@ class AiController():
         elif action == 2:
             self.__player.shoot_bullet()
 
+        prev_point = self.__game.total_point()
         self.__game.render()
+        point_in_frame = self.__game.total_point() - prev_point
+        print(point_in_frame)
 
 

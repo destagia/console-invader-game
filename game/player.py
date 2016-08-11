@@ -4,11 +4,12 @@ from bullet import Bullet
 
 class Player():
 
-    def __init__(self):
+    def __init__(self, game):
         self.position = Position(0, 0)
         self.is_dead = False
         self.__mesh = "僕"
         self.__update_prior = 3
+        self.__game = game
 
     def update(self):
         """

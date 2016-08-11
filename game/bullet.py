@@ -22,6 +22,7 @@ class Bullet():
                 # go is an Enemy instance, so it has is_dead property
                 go.is_dead = True
                 self.is_dead = True
+                self.__game.add_point(100)
 
     def mesh(self):
         return Bullet.SYMBOL
