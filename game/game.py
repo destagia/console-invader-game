@@ -7,14 +7,22 @@ class Game():
     def __init__(self):
         self.__game_objects = []
         self.__hr = " " + "ー" * Game.DISPLAY_WIDTH
+        self.update_display()
 
     def add(self, game_object):
         self.__game_objects.append(game_object)
         self.__game_objects = sorted(self.__game_objects, key=lambda go: go.update_prior(), reverse=True)
 
+    def current_display(self):
+        return self.__filled_display
+
+    def update_display(self):
+        self.__filled_display = self.__create_filled_display()
+
     def render(self):
+        self.update_display()
         print(self.__hr)
-        for line in reversed(self.__create_filled_display()):
+        for line in reversed(self.__filled_display):
             line_str = "|"
             for game_object in line:
                 if game_object == None:

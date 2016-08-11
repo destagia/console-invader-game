@@ -24,3 +24,6 @@ class Enemy():
     def mesh(self):
         return self.__mesh
 
+    def state_value(self):
+        return 1.0
+
