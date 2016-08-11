@@ -22,5 +22,5 @@ while True:
         e_y = random.randint(Game.DISPLAY_HEIGHT / 2, Game.DISPLAY_HEIGHT - 1)
         obj = game.get_by_position(e_x, e_y)
         if obj == None:
-            game.add(Enemy(Position(e_x, e_y)))
+            game.add(Enemy(Position(e_x, e_y), game))
     controller.next()

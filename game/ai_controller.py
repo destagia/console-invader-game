@@ -5,6 +5,8 @@ import chainer.functions as F
 import chainer.links     as L
 import numpy             as np
 from collections import deque
+import chainer.serializers as S
+import os.path
 
 class QNetwork(Chain):
     def __init__(self):
@@ -17,13 +19,13 @@ class QNetwork(Chain):
         h1 = F.relu(self.conv1(state))
         h2 = F.relu(self.l1(h1))
         h3 = F.relu(self.l2(h2))
-        return F.softmax(h3)
+        return h3
 
 class AiController():
-    OBSERVE_FRAME = 100
+    OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
     BATCH = 32
-    GAMMA = 0.99
+    GAMMA = 0.9
 
     def __init__(self, game, player):
         self.__game = game
@@ -33,6 +35,14 @@ class AiController():
         self.__optimizer.setup(self.__network)
         self.__history = deque()
         self.__timestamp = 0
+        self.load()
+
+    def save(self):
+        S.save_hdf5('network.model', self.__network)
+
+    def load(self):
+        if os.path.isfile('network.model'):
+            S.load_hdf5('network.model', self.__network)
 
     def display_as_state(self):
         state = []
@@ -59,9 +69,14 @@ class AiController():
             self.__history.popleft()
 
         state = self.current_state()
-        q_value = self.__network(state)
-        action = np.argmax(q_value.data)
-        print(q_value.data)
+        if random.random() < 0.1:
+            action = random.randint(0, 2)
+            print("RANDOM: {}", action)
+        else:
+            q_value = self.__network(state)
+            q_value_soft = F.softmax(q_value)
+            action = np.argmax(q_value_soft.data)
+            print("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
 
         if action == 0:
             self.__player.move_left()
@@ -72,19 +87,20 @@ class AiController():
 
         prev_point = self.__game.total_point()
 
+        ###################################################################################
         self.__game.render()
         self.__timestamp += 1
+        ###################################################################################
 
         print("TIME: {}, GAME SCORE: {}".format(self.__timestamp, self.__game.total_point()))
-        reward = self.__game.total_point() - prev_point
+        reward = (self.__game.total_point() - prev_point) / 100.0
         state_prime = self.current_state()
 
         self.__history.append({
             "state": state,
             "action": action,
             "reward": reward,
-            "state_prime": state_prime,
-            "q_value": q_value
+            "state_prime": state_prime
         })
 
         if self.__timestamp > AiController.OBSERVE_FRAME:
@@ -107,5 +123,8 @@ class AiController():
                 targets[i, action] = reward + AiController.GAMMA * np.max(Q_sa.data)
 
             x = self.__network(inputs.astype(np.float32))
-            self.__optimizer.update(F.MeanSquaredError(), x, targets.astype(np.float32))
+            loss = self.__optimizer.update(F.MeanSquaredError(), x, targets.astype(np.float32))
+
+            if self.__timestamp % 1 == 0:
+                self.save()
 
