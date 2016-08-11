@@ -54,7 +54,6 @@ class Game():
             display.append(line)
         return display
 
-
     def __adjust_position(self, position):
         if position.x < 0:
             position.x = 0
