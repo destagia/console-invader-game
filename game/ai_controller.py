@@ -11,14 +11,14 @@ import os.path
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
-            conv1=F.Convolution2D(1, 32, ksize=8),
-            l1=F.Linear(1024, 512),
+            conv1=F.Convolution2D(1, 32, ksize=3),
+            l1=F.Linear(3744, 512),
             l2=F.Linear(512, 3))
 
     def __call__(self, state):
-        h1 = F.relu(self.conv1(state))
-        h2 = F.relu(self.l1(h1))
-        h3 = F.relu(self.l2(h2))
+        h1 = F.leaky_relu(self.conv1(state))
+        h2 = F.leaky_relu(self.l1(h1))
+        h3 = F.leaky_relu(self.l2(h2))
         return h3
 
 class AiController():
