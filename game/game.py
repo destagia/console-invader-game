@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 class Game():
 
-    DISPLAY_WIDTH = 8
-    DISPLAY_HEIGHT = 20
+    DISPLAY_WIDTH = 11
+    DISPLAY_HEIGHT = 15
 
     def __init__(self):
         self.__game_objects = []
@@ -10,15 +10,15 @@ class Game():
 
     def add(self, game_object):
         self.__game_objects.append(game_object)
-        self.__game_objects = sorted(self.__game_objects, lambda go: go.update_prior(), reverse=True)
+        self.__game_objects = sorted(self.__game_objects, key=lambda go: go.update_prior(), reverse=True)
 
     def render(self):
         print(self.__hr)
-        for line in self.__create_filled_display():
+        for line in reversed(self.__create_filled_display()):
             line_str = "|"
             for game_object in line:
                 if game_object == None:
-                    line_str += "＊"
+                    line_str += "　"
                 else:
                     line_str += game_object.mesh()
             line_str += "|"

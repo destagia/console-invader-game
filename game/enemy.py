@@ -1,13 +1,22 @@
+# -*- coding: utf-8 -*-
 
 class Enemy():
     def __init__(self, first_position):
         self.position = first_position
         # Enemy moves owing to move_couner
         self.__move_counter = 0
+        self.__update_prior = 0
+        self.__mesh = "敵"
 
     def update(self):
         if self.__move_counter >= 5:
-            self.position.x -= 1
+            self.position.y -= 1
             self.__move_counter = 0
         self.__move_counter += 1
+
+    def update_prior(self):
+        return self.__update_prior
+
+    def mesh(self):
+        return self.__mesh
 
