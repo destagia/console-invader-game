@@ -1,9 +1,10 @@
-from game import Game, Player, Enemy, Position
+from game import Game, Player, Enemy, Position, AiController
 import time
 
-
-player = Player()
 game = Game()
+
+controller = AiController()
+player = Player(controller, game)
 
 player.position.x = int(Game.DISPLAY_WIDTH / 2)
 
