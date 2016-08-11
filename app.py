@@ -24,4 +24,3 @@ while True:
         if obj == None:
             game.add(Enemy(Position(e_x, e_y)))
     controller.next()
-    time.sleep(0.2)

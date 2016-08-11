@@ -20,8 +20,10 @@ class QNetwork(Chain):
         return F.softmax(h3)
 
 class AiController():
-    OBSERVE_FRAME = 3200
+    OBSERVE_FRAME = 100
     REPLAY_MEMORY = 50000
+    BATCH = 32
+    GAMMA = 0.99
 
     def __init__(self, game, player):
         self.__game = game
@@ -30,6 +32,7 @@ class AiController():
         self.__optimizer = optimizers.Adam()
         self.__optimizer.setup(self.__network)
         self.__history = deque()
+        self.__timestamp = 0
 
     def display_as_state(self):
         state = []
@@ -68,8 +71,11 @@ class AiController():
             self.__player.shoot_bullet()
 
         prev_point = self.__game.total_point()
+
         self.__game.render()
-        print("GAME SCORE: {}".format(self.__game.total_point()))
+        self.__timestamp += 1
+
+        print("TIME: {}, GAME SCORE: {}".format(self.__timestamp, self.__game.total_point()))
         reward = self.__game.total_point() - prev_point
         state_prime = self.current_state()
 
@@ -77,7 +83,29 @@ class AiController():
             "state": state,
             "action": action,
             "reward": reward,
-            "state'": state_prime,
+            "state_prime": state_prime,
+            "q_value": q_value
         })
 
+        if self.__timestamp > AiController.OBSERVE_FRAME:
+            minibatch = random.sample(self.__history, AiController.BATCH)
+
+            inputs = np.zeros((AiController.BATCH, 1, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
+            targets = np.zeros((inputs.shape[0], 3))
+
+            for i in range(0, len(minibatch)):
+                data = minibatch[i]
+                state = data['state']
+                action = data['action']
+                reward = data['reward']
+                state_prime = data['state_prime']
+
+                inputs[i : i + 1] = state
+                targets[i] = self.__network(state).data
+                Q_sa = self.__network(state_prime)
+
+                targets[i, action] = reward + AiController.GAMMA * np.max(Q_sa.data)
+
+            x = self.__network(inputs.astype(np.float32))
+            self.__optimizer.update(F.MeanSquaredError(), x, targets.astype(np.float32))
 
