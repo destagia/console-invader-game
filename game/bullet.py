@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from enemy import Enemy
+from game import Game
 
 class Bullet():
     SYMBOL = "弾"
@@ -12,10 +13,15 @@ class Bullet():
 
     def update(self):
         self.position.y += 1
+        if self.position.y >= Game.DISPLAY_HEIGHT - 1:
+            self.is_dead = True
+            return
+
         for go in self.__game.game_objects():
             if go != None and isinstance(go, Enemy) and go.position == self.position:
                 # go is an Enemy instance, so it has is_dead property
                 go.is_dead = True
+                self.is_dead = True
 
     def mesh(self):
         return Bullet.SYMBOL

@@ -12,6 +12,9 @@ class Enemy():
     def update(self):
         if self.__move_counter >= 5:
             self.position.y -= 1
+            if self.position.y == -1:
+                self.is_dead = True
+                return
             self.__move_counter = 0
         self.__move_counter += 1
 
