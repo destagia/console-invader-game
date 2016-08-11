@@ -6,6 +6,7 @@ class Player():
 
     def __init__(self, controller, game):
         self.position = Position(0, 0)
+        self.is_dead = False
         self.__mesh = "僕"
         self.__update_prior = 3
         self.__controller = controller
@@ -25,7 +26,7 @@ class Player():
             self.shoot_bullet()
 
     def shoot_bullet(self):
-        bullet = Bullet(Position(self.position.x, self.position.y + 1))
+        bullet = Bullet(Position(self.position.x, self.position.y + 1), self.__game)
         self.__game.add(bullet)
 
     def mesh(self):
@@ -33,4 +34,3 @@ class Player():
 
     def update_prior(self):
         return self.__update_prior
-

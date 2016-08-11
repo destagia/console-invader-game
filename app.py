@@ -1,7 +1,8 @@
-from game import Game, Player, Enemy, Position, AiController
+from game import *
 import time
 
 game = Game()
+enemy_pool = EnemyPool()
 
 controller = AiController()
 player = Player(controller, game)

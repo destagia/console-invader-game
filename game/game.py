@@ -25,8 +25,12 @@ class Game():
             print(line_str)
         print(self.__hr)
 
+    def game_objects(self):
+        return self.__game_objects
+
     def __create_filled_display(self):
         display = self.__create_white_display()
+        self.__game_objects = [go for go in self.__game_objects if not go.is_dead]
         for go in self.__game_objects:
             go.update()
             self.__adjust_position(go.position)

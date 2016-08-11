@@ -3,6 +3,7 @@
 class Enemy():
     def __init__(self, first_position):
         self.position = first_position
+        self.is_dead = False
         # Enemy moves owing to move_couner
         self.__move_counter = 0
         self.__update_prior = 0
