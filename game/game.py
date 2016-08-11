@@ -43,6 +43,9 @@ class Game():
     def game_objects(self):
         return self.__game_objects
 
+    def get_by_position(self, x, y):
+        return self.__filled_display[y][x]
+
     def __create_filled_display(self):
         display = self.__create_white_display()
         self.__game_objects = [go for go in self.__game_objects if not go.is_dead]

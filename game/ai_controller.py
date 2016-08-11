@@ -68,6 +68,5 @@ class AiController():
         prev_point = self.__game.total_point()
         self.__game.render()
         point_in_frame = self.__game.total_point() - prev_point
-        print(point_in_frame)
 
 
