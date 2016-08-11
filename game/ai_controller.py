@@ -43,19 +43,21 @@ class AiController():
                     state_line.append(point.state_value())
         return state
 
-    def next(self):
-        if len(self.__history) > 0:
-            prev_frame = self.__history[-1]
-
+    def current_state(self):
         state = np.asarray(self.display_as_state())
         state = state.astype(np.float32)
         state = state.reshape(1, 1, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
+        return state
+
+    def next(self):
+        if len(self.__history) > 0:
+            prev_frame = self.__history[-1]
+        if len(self.__history) > AiController.REPLAY_MEMORY:
+            self.__history.popleft()
+
+        state = self.current_state()
         q_value = self.__network(state)
         action = np.argmax(q_value.data)
-        self.__history.append({
-            "state": state,
-            "action": action,
-        })
         print(q_value.data)
 
         if action == 0:
@@ -67,6 +69,15 @@ class AiController():
 
         prev_point = self.__game.total_point()
         self.__game.render()
-        point_in_frame = self.__game.total_point() - prev_point
+        print("GAME SCORE: {}".format(self.__game.total_point()))
+        reward = self.__game.total_point() - prev_point
+        state_prime = self.current_state()
+
+        self.__history.append({
+            "state": state,
+            "action": action,
+            "reward": reward,
+            "state'": state_prime,
+        })
 
 
