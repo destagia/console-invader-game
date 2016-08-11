@@ -23,8 +23,9 @@ class AiController():
     OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
 
-    def __init__(self, game):
+    def __init__(self, game, player):
         self.__game = game
+        self.__player = player
         self.__network = QNetwork()
         self.__optimizer = optimizers.Adam()
         self.__optimizer.setup(self.__network)
@@ -42,7 +43,7 @@ class AiController():
                     state_line.append(point.state_value())
         return state
 
-    def get_command(self):
+    def next(self):
         if len(self.__history) > 0:
             prev_frame = self.__history[-1]
 
@@ -56,4 +57,13 @@ class AiController():
             "action": action,
         })
         print(q_value.data)
-        return action
+        if action == 0:
+            self.__player.move_left()
+        elif action == 1:
+            self.__player.move_right()
+        elif action == 2:
+            self.__player.shoot_bullet()
+
+        self.__game.render()
+
+
