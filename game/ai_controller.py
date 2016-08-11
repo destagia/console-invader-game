@@ -125,6 +125,7 @@ class AiController():
             x = self.__network(inputs.astype(np.float32))
             loss = self.__optimizer.update(F.MeanSquaredError(), x, targets.astype(np.float32))
 
-            if self.__timestamp % 1 == 0:
+            if self.__timestamp % 100 == 0:
+                print('save model!')
                 self.save()
 
