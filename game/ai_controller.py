@@ -11,7 +11,7 @@ import os.path
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
-            conv1=F.Convolution2D(1, 32, ksize=3),
+            conv1=F.Convolution2D(3, 32, ksize=3),
             l1=F.Linear(3744, 512),
             l2=F.Linear(512, 3))
 
@@ -50,16 +50,16 @@ class AiController():
             state_line = []
             state.append(state_line)
             for point in line:
-                if point == None:
-                    state_line.append(0)
-                else:
-                    state_line.append(point.state_value())
+                value = [0.0, 0.0, 0.0]
+                if point != None:
+                    value[point.state_index()] = 1.0
+                state_line.append(value)
         return state
 
     def current_state(self):
         state = np.asarray(self.display_as_state())
         state = state.astype(np.float32)
-        state = state.reshape(1, 1, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
+        state = state.reshape(1, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
         return state
 
     def next(self):
@@ -103,10 +103,12 @@ class AiController():
             "state_prime": state_prime
         })
 
+        return
+
         if self.__timestamp > AiController.OBSERVE_FRAME:
             minibatch = random.sample(self.__history, AiController.BATCH)
 
-            inputs = np.zeros((AiController.BATCH, 1, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
+            inputs = np.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
             targets = np.zeros((inputs.shape[0], 3))
 
             for i in range(0, len(minibatch)):

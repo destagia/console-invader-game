@@ -30,5 +30,5 @@ class Bullet():
     def update_prior(self):
         return Bullet.UPDATE_PRIOR
 
-    def state_value(self):
-        return 0.2
+    def state_index(self):
+        return 1

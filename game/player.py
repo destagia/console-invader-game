@@ -34,5 +34,5 @@ class Player():
     def update_prior(self):
         return self.__update_prior
 
-    def state_value(self):
-        return 0.5
+    def state_index(self):
+        return 0
