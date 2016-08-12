@@ -103,8 +103,6 @@ class AiController():
             "state_prime": state_prime
         })
 
-        return
-
         if self.__timestamp > AiController.OBSERVE_FRAME:
             minibatch = random.sample(self.__history, AiController.BATCH)
 
