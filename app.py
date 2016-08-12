@@ -28,6 +28,7 @@ frame_count = 0
 point_history = []
 prev_frame_total_point = 0
 reward_per_100frames = 0
+enemy_count_per100frames = 0
 
 while True:
     # Spawn enemy randomly!
@@ -37,6 +38,7 @@ while True:
         obj = game.get_by_position(e_x, e_y)
         if obj == None:
             game.add(Enemy(Position(e_x, e_y), game))
+            enemy_count_per100frames += 1
 
     # Move player and go next frame
     controller.next()
@@ -45,14 +47,16 @@ while True:
     reward_per_100frames += (curr_frame_total_point - prev_frame_total_point)
     prev_frame_total_point = curr_frame_total_point
 
+    frame_count += 1
+
     # Plot the reward per 100 frames
     if frame_count % 100 == 0:
-        point_history.append(reward_per_100frames)
+        # This value converges to 0 if the AI is perfect
+        point_history.append(reward_per_100frames - (enemy_count_per100frames * 100))
         lines.set_data(range(len(point_history)), point_history)
         ax.set_xlim((0, len(point_history)))
-        ax.set_ylim((np.min(point_history), np.max(point_history)))
+        ax.set_ylim((np.min(point_history) - 100, np.max(point_history) + 100))
         plt.waitforbuttonpress(timeout=.01)
         reward_per_100frames = 0
-
-    frame_count += 1
+        enemy_count_per100frames = 0
 
