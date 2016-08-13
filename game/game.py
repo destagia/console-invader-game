@@ -8,7 +8,7 @@ class Game():
         self.__game_objects = []
         self.__hr = " " + "ー" * Game.DISPLAY_WIDTH
         self.__point = 0
-        self.update_display()
+        self.update()
 
     def add(self, game_object):
         self.__game_objects.append(game_object)
@@ -17,7 +17,7 @@ class Game():
     def current_display(self):
         return self.__filled_display
 
-    def update_display(self):
+    def update(self):
         self.__filled_display = self.__create_filled_display()
 
     def add_point(self, value):
@@ -27,7 +27,6 @@ class Game():
         return self.__point
 
     def render(self):
-        self.update_display()
         print(self.__hr)
         for line in reversed(self.__filled_display):
             line_str = "|"

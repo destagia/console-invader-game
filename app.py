@@ -60,3 +60,5 @@ while True:
         reward_per_100frames = 0
         enemy_count_per100frames = 0
 
+    game.render()
+
