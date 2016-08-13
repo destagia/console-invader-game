@@ -27,10 +27,11 @@ player.position.x = int(Game.DISPLAY_WIDTH / 2)
 game.add(player)
 
 # Matplot Lib
-fig, ax = plt.subplots(1, 1)
-lines, = ax.plot([0], [0])
-plt.xlabel("Time stamp")
-plt.ylabel("Reward")
+if args.plot == 'on':
+    fig, ax = plt.subplots(1, 1)
+    lines, = ax.plot([0], [0])
+    plt.xlabel("Time stamp")
+    plt.ylabel("Reward")
 
 frame_count = 0
 point_history = []
