@@ -27,7 +27,9 @@ class AiController():
     BATCH = 32
     GAMMA = 0.9
 
-    def __init__(self, game, player):
+    def __init__(self, game, player, with_train, verbose):
+        self.__with_train = with_train
+        self.__verbose = verbose
         self.__game = game
         self.__player = player
         self.__network = QNetwork()
@@ -37,6 +39,10 @@ class AiController():
         self.__timestamp = 0
         self.load()
 
+    def log(self, str):
+        if self.__verbose:
+            print(str)
+
     def save(self):
         S.save_hdf5('network.model', self.__network)
 
@@ -44,7 +50,7 @@ class AiController():
         if os.path.isfile('network.model'):
             S.load_hdf5('network.model', self.__network)
 
-    def display_as_state(self):
+    def get_display_as_state(self):
         state = []
         for line in self.__game.current_display():
             state_line = []
@@ -57,7 +63,7 @@ class AiController():
         return state
 
     def current_state(self):
-        state = np.asarray(self.display_as_state())
+        state = np.asarray(self.get_display_as_state())
         state = state.astype(np.float32)
         state = state.reshape(1, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
         return state
@@ -71,12 +77,12 @@ class AiController():
         state = self.current_state()
         if random.random() < 0.1:
             action = random.randint(0, 2)
-            print("RANDOM: {}", action)
+            self.log("RANDOM: {}".format(action))
         else:
             q_value = self.__network(state)
             q_value_soft = F.softmax(q_value)
             action = np.argmax(q_value_soft.data)
-            print("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
+            self.log("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
 
         if action == 0:
             self.__player.move_left()
@@ -92,7 +98,8 @@ class AiController():
         self.__timestamp += 1
         ###################################################################################
 
-        print("TIME: {}, GAME SCORE: {}".format(self.__timestamp, self.__game.total_point()))
+        self.log("TIME: {}, GAME SCORE: {}".format(self.__timestamp, self.__game.total_point()))
+
         reward = (self.__game.total_point() - prev_point) / 100.0
         state_prime = self.current_state()
 
@@ -126,6 +133,6 @@ class AiController():
             loss = self.__optimizer.update(F.MeanSquaredError(), x, targets.astype(np.float32))
 
             if self.__timestamp % 100 == 0:
-                print('save model!')
+                self.log('save model!')
                 self.save()
 
