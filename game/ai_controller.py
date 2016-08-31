@@ -11,15 +11,19 @@ import os.path
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
-            conv1=F.Convolution2D(3, 32, ksize=3),
-            l1=F.Linear(3744, 512),
+            conv1=F.Convolution2D(3, 16, ksize=3, pad=1),
+            conv2=F.Convolution2D(16, 32, ksize=3, pad=1, stride=2),
+            conv3=F.Convolution2D(32, 64, ksize=3, pad=1, stride=2),
+            l1=F.Linear(768, 512),
             l2=F.Linear(512, 3))
 
     def __call__(self, state):
         h1 = F.leaky_relu(self.conv1(state))
-        h2 = F.leaky_relu(self.l1(h1))
-        h3 = F.leaky_relu(self.l2(h2))
-        return h3
+        h2 = F.leaky_relu(self.conv2(h1))
+        h3 = F.leaky_relu(self.conv3(h2))
+        h4 = F.leaky_relu(self.l1(h3))
+        h5 = self.l2(h4)
+        return h5
 
 class AiController():
     OBSERVE_FRAME = 3200
