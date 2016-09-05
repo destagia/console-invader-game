@@ -33,14 +33,15 @@ class AiController():
     BATCH = 32
     GAMMA = 0.97
 
-    def __init__(self, game, player, policy, with_train, verbose):
+    def __init__(self, game, player, policy, with_train, verbose, gpu):
         self.__with_train = with_train
         self.__verbose = verbose
         self.__policy = policy
         self.__game = game
         self.__player = player
         self.__network = QNetwork()
-        self.__network.to_gpu()
+        if gpu:
+            self.__network.to_gpu()
         self.__optimizer = optimizers.Adam()
         self.__optimizer.setup(self.__network)
         self.__history = deque()
@@ -77,13 +78,16 @@ class AiController():
         state = state.reshape(1, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
         return state
 
+    def to_gpu(self, x):
+        return self.__network.xp.asarray(x)
+
     def next(self):
         if len(self.__history) > 0:
             prev_frame = self.__history[-1]
         if len(self.__history) > AiController.REPLAY_MEMORY:
             self.__history.popleft()
 
-        state = self.current_state()
+        state = self.to_gpu(self.current_state())
         q_value = self.__network(state)
 
         if self.__policy == 'greedy':
