@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser(description='Invader Game with Deep Reinforceme
 parser.add_argument('-m','--mode', help='train / run', required=True)
 parser.add_argument('-o','--output', help='game / data', default="game")
 parser.add_argument('-p','--plot', help='on / off', default="off")
+parser.add_argument('-s','--strategy', help='greedy / egreedy / softmax', default="softmax")
 
 args = parser.parse_args()
 
@@ -16,7 +17,7 @@ game = Game()
 enemy_pool = EnemyPool()
 
 player = Player(game)
-controller = AiController(game, player, args.mode == "train", args.output == "game")
+controller = AiController(game, player, args.strategy, args.mode == "train", args.output == "game")
 
 player.position.x = int(Game.DISPLAY_WIDTH / 2)
 

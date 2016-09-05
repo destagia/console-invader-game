@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from game import Game
 import random
 from chainer import Chain, Variable, optimizers
@@ -29,18 +31,21 @@ class AiController():
     OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
     BATCH = 32
-    GAMMA = 0.9
+    GAMMA = 0.97
 
-    def __init__(self, game, player, with_train, verbose):
+    def __init__(self, game, player, policy, with_train, verbose):
         self.__with_train = with_train
         self.__verbose = verbose
+        self.__policy = policy
         self.__game = game
         self.__player = player
         self.__network = QNetwork()
+        self.__network.to_gpu()
         self.__optimizer = optimizers.Adam()
         self.__optimizer.setup(self.__network)
         self.__history = deque()
         self.__timestamp = 0
+        self.__point = 0.0
         self.load()
 
     def log(self, str):
@@ -79,13 +84,22 @@ class AiController():
             self.__history.popleft()
 
         state = self.current_state()
-        if random.random() < 0.1:
-            action = random.randint(0, 2)
-            self.log("RANDOM: {}".format(action))
-        else:
-            q_value = self.__network(state)
-            q_value_soft = F.softmax(q_value)
-            action = np.argmax(q_value_soft.data)
+        q_value = self.__network(state)
+
+        if self.__policy == 'greedy':
+            action = np.argmax(q_value.data.reshape(-1))
+            self.log("GREEDY: {}".format(action))
+        elif self.__policy == 'egreedy':
+            if random.random() < 0.1:
+                action = random.randint(0, 2)
+                self.log("ε-greedy RANDOM: {}".format(action))
+            else:
+                action = np.argmax(q_value.data.reshape(-1))
+                self.log("ε-greedy GREEDY: {}".format(action))
+        elif self.__policy == 'softmax':
+            q_value_soft = F.softmax(q_value / 0.1)
+            prob = q_value_soft.data.reshape(-1)
+            action = np.random.choice(len(prob), p=prob)
             self.log("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
 
         if action == 0:
@@ -102,9 +116,12 @@ class AiController():
         self.__timestamp += 1
         ###################################################################################
 
-        self.log("TIME: {}, GAME SCORE: {}".format(self.__timestamp, self.__game.total_point()))
+        curr_point = self.__game.total_point() - prev_point
+        self.__point = self.__point * AiController.GAMMA + (curr_point / 100.0)
 
-        reward = (self.__game.total_point() - prev_point) / 100.0
+        self.log("TIME: {}, GAME SCORE: {}".format(self.__timestamp, self.__point))
+
+        reward = (curr_point) / 100.0
         state_prime = self.current_state()
 
         self.__history.append({
@@ -134,7 +151,10 @@ class AiController():
                 targets[i, action] = reward + AiController.GAMMA * np.max(Q_sa.data)
 
             x = self.__network(inputs.astype(np.float32))
-            loss = self.__optimizer.update(F.MeanSquaredError(), x, targets.astype(np.float32))
+            loss = F.mean_squared_error(x, targets.astype(np.float32))
+            self.__optimizer.update(lambda: loss)
+
+            print("LOSS: {}".format(loss.data))
 
             if self.__timestamp % 100 == 0:
                 self.log('save model!')
