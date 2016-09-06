@@ -42,8 +42,11 @@ class AiController(object):
         self.__network = QNetwork()
         if gpu:
             self.__network.to_gpu()
+        self.xp = self.__network.xp
+
         self.__optimizer = optimizers.Adam()
         self.__optimizer.setup(self.__network)
+
         self.__timestamp = 0
         self.__point = 0.0
 
@@ -78,8 +81,8 @@ class AiController(object):
         return state
 
     def current_state(self):
-        state = np.asarray(self.get_display_as_state())
-        state = state.astype(np.float32)
+        state = self.xp.asarray(self.get_display_as_state())
+        state = state.astype(self.xp.float32)
         state = state.reshape(1, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
         return state
 
@@ -87,38 +90,37 @@ class AiController(object):
         return self.__network.xp.asarray(x)
 
     def random_history(self, size):
-        # indices = np.random.random_integers(self.__history_size, size=size)
+        # indices = self.xp.random.random_integers(self.__history_size, size=size)
         # return map(lambda i: self.__history[i], indices)
         return random.sample(self.__history, AiController.BATCH)
 
     def push_history(self, step_data):
         # self.__history_cursor += 1
-        # self.__history_size = np.max([self.__history_size, self.__history_cursor])
+        # self.__history_size = self.xp.max([self.__history_size, self.__history_cursor])
         # self.__history_cursor = self.__history_cursor % AiController.REPLAY_MEMORY
         # self.__history[cursor] - step_data
         self.__history.append(step_data)
         if len(self.__history) > AiController.REPLAY_MEMORY:
             self.__history.popleft()
 
-
     def next(self):
         state = self.asarray(self.current_state())
         q_value = self.__network(state)
 
         if self.__policy == 'greedy':
-            action = np.argmax(q_value.data.reshape(-1))
+            action = self.xp.argmax(q_value.data.reshape(-1))
             self.log("GREEDY: {}".format(action))
         elif self.__policy == 'egreedy':
             if random.random() < 0.1:
                 action = random.randint(0, 2)
                 self.log("ε-greedy RANDOM: {}".format(action))
             else:
-                action = np.argmax(q_value.data.reshape(-1))
+                action = self.xp.argmax(q_value.data.reshape(-1))
                 self.log("ε-greedy GREEDY: {}".format(action))
         elif self.__policy == 'softmax':
             q_value_soft = F.softmax(q_value / 0.1)
             prob = q_value_soft.data.reshape(-1)
-            action = np.random.choice(len(prob), p=prob)
+            action = self.xp.random.choice(len(prob), p=prob)
             self.log("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
 
         if action == 0:
@@ -166,10 +168,10 @@ class AiController(object):
                 self.__train_targets[i] = q_value.data
                 Q_sa = self.__network(state_prime)
 
-                self.__train_targets[i, action] = reward + AiController.GAMMA * np.max(Q_sa.data)
+                self.__train_targets[i, action] = reward + AiController.GAMMA * self.xp.max(Q_sa.data)
 
-            x = self.__network(self.__train_inputs.astype(np.float32))
-            loss = F.mean_squared_error(x, self.__train_targets.astype(np.float32))
+            x = self.__network(self.__train_inputs.astype(self.xp.float32))
+            loss = F.mean_squared_error(x, self.__train_targets.astype(self.xp.float32))
             self.__optimizer.update(lambda: loss)
 
             print("LOSS: {}".format(loss.data))
