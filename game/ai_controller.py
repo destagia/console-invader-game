@@ -27,8 +27,8 @@ class QNetwork(Chain):
         h5 = self.l2(h4)
         return h5
 
-class AiController():
-    OBSERVE_FRAME = 3200
+class AiController(object):
+    OBSERVE_FRAME = 100
     REPLAY_MEMORY = 50000
     BATCH = 32
     GAMMA = 0.97
@@ -44,9 +44,14 @@ class AiController():
             self.__network.to_gpu()
         self.__optimizer = optimizers.Adam()
         self.__optimizer.setup(self.__network)
-        self.__history = deque()
         self.__timestamp = 0
         self.__point = 0.0
+
+        self.__history = deque()
+
+        self.__train_inputs = self.__network.xp.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
+        self.__train_targets = self.__network.xp.zeros((AiController.BATCH, 3))
+
         self.load()
 
     def log(self, str):
@@ -78,16 +83,26 @@ class AiController():
         state = state.reshape(1, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
         return state
 
-    def to_gpu(self, x):
+    def asarray(self, x):
         return self.__network.xp.asarray(x)
 
-    def next(self):
-        if len(self.__history) > 0:
-            prev_frame = self.__history[-1]
+    def random_history(self, size):
+        # indices = np.random.random_integers(self.__history_size, size=size)
+        # return map(lambda i: self.__history[i], indices)
+        return random.sample(self.__history, AiController.BATCH)
+
+    def push_history(self, step_data):
+        # self.__history_cursor += 1
+        # self.__history_size = np.max([self.__history_size, self.__history_cursor])
+        # self.__history_cursor = self.__history_cursor % AiController.REPLAY_MEMORY
+        # self.__history[cursor] - step_data
+        self.__history.append(step_data)
         if len(self.__history) > AiController.REPLAY_MEMORY:
             self.__history.popleft()
 
-        state = self.to_gpu(self.current_state())
+
+    def next(self):
+        state = self.asarray(self.current_state())
         q_value = self.__network(state)
 
         if self.__policy == 'greedy':
@@ -128,18 +143,16 @@ class AiController():
         reward = (curr_point) / 100.0
         state_prime = self.current_state()
 
-        self.__history.append({
+        self.push_history({
             "state": state,
             "action": action,
             "reward": reward,
-            "state_prime": state_prime
+            "state_prime": state_prime,
+            "q_value": q_value,
         })
 
         if self.__timestamp > AiController.OBSERVE_FRAME:
-            minibatch = random.sample(self.__history, AiController.BATCH)
-
-            inputs = np.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
-            targets = np.zeros((inputs.shape[0], 3))
+            minibatch = self.random_history(AiController.BATCH)
 
             for i in range(0, len(minibatch)):
                 data = minibatch[i]
@@ -147,15 +160,16 @@ class AiController():
                 action = data['action']
                 reward = data['reward']
                 state_prime = data['state_prime']
+                q_value = data['q_value']
 
-                inputs[i : i + 1] = state
-                targets[i] = self.__network(state).data
+                self.__train_inputs[i : i + 1] = state
+                self.__train_targets[i] = q_value.data
                 Q_sa = self.__network(state_prime)
 
-                targets[i, action] = reward + AiController.GAMMA * np.max(Q_sa.data)
+                self.__train_targets[i, action] = reward + AiController.GAMMA * np.max(Q_sa.data)
 
-            x = self.__network(inputs.astype(np.float32))
-            loss = F.mean_squared_error(x, targets.astype(np.float32))
+            x = self.__network(self.__train_inputs.astype(np.float32))
+            loss = F.mean_squared_error(x, self.__train_targets.astype(np.float32))
             self.__optimizer.update(lambda: loss)
 
             print("LOSS: {}".format(loss.data))
