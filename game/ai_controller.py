@@ -120,7 +120,7 @@ class AiController(object):
         elif self.__policy == 'softmax':
             q_value_soft = F.softmax(q_value / 0.1)
             prob = q_value_soft.data.reshape(-1)
-            action = self.xp.random.choice(len(prob), p=prob)
+            action = np.random.choice(len(prob), p=prob)
             self.log("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
 
         if action == 0:
