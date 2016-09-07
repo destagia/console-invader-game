@@ -52,6 +52,8 @@ class AiController(object):
 
         self.__history = deque()
 
+        self.__q_value = None
+
         self.__train_inputs = self.__network.xp.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
         self.__train_targets = self.__network.xp.zeros((AiController.BATCH, 3))
 
@@ -105,7 +107,10 @@ class AiController(object):
 
     def next(self):
         state = self.asarray(self.current_state())
-        q_value = self.__network(state)
+        if self.__q_value is None:
+            q_value = self.__network(state)
+        else:
+            q_value = self.__q_value
 
         if self.__policy == 'greedy':
             action = self.xp.argmax(q_value.data.reshape(-1))
@@ -120,7 +125,7 @@ class AiController(object):
         elif self.__policy == 'softmax':
             q_value_soft = F.softmax(q_value / 0.1)
             prob = q_value_soft.data.reshape(-1)
-            action = np.random.choice(len(prob), p=prob)
+            action = np.random.choice(len(prob), p=prob.data)
             self.log("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
 
         if action == 0:
@@ -156,6 +161,9 @@ class AiController(object):
         if self.__timestamp > AiController.OBSERVE_FRAME:
             minibatch = self.random_history(AiController.BATCH)
 
+            predicted_q_values = []
+            actual_q_values = np.zeros((AiController.BATCH, 1))
+
             for i in range(0, len(minibatch)):
                 data = minibatch[i]
                 state = data['state']
@@ -163,15 +171,16 @@ class AiController(object):
                 reward = data['reward']
                 state_prime = data['state_prime']
                 q_value = data['q_value']
+                
+                predicted_q_values.append(q_value[:, action : action + 1])
 
-                self.__train_inputs[i : i + 1] = state
-                self.__train_targets[i] = q_value.data
-                Q_sa = self.__network(state_prime)
+                self.__q_value = self.__network(state_prime)
 
-                self.__train_targets[i, action] = reward + AiController.GAMMA * self.xp.max(Q_sa.data)
+                actual_q_values[i, 0] = reward + AiController.GAMMA * self.xp.max(self.__q_value.data)
 
-            x = self.__network(self.__train_inputs.astype(self.xp.float32))
-            loss = F.mean_squared_error(x, self.__train_targets.astype(self.xp.float32))
+            actual_q_values = self.xp.array(actual_q_values, dtype=self.xp.float32)
+            predicted_q_values = F.concat(predicted_q_values, axis=0)
+            loss = F.mean_squared_error(actual_q_values, predicted_q_values)
             self.__optimizer.update(lambda: loss)
 
             print("LOSS: {}".format(loss.data))
