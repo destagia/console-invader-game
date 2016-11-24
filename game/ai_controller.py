@@ -24,7 +24,7 @@ class QNetwork(Chain):
         return h5
 
 class AiController(object):
-    OBSERVE_FRAME = 100
+    OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
     BATCH = 32
     GAMMA = 0.97
@@ -36,9 +36,11 @@ class AiController(object):
         self.__game = game
         self.__player = player
         self.__network = QNetwork()
+
         if gpu >= 0:
             cuda.get_device(gpu).use()
             self.__network.to_gpu()
+
         self.xp = self.__network.xp
 
         self.__optimizer = optimizers.Adam()
@@ -147,7 +149,6 @@ class AiController(object):
             "action": action,
             "reward": reward,
             "state_prime": state_prime,
-            "q_value": q_value,
         })
 
         if self.__timestamp > AiController.OBSERVE_FRAME:
@@ -156,15 +157,14 @@ class AiController(object):
             for i in range(0, len(minibatch)):
                 data = minibatch[i]
                 state = data['state']
-                action = data['action']
+                action = int(data['action'])
                 reward = data['reward']
                 state_prime = data['state_prime']
-                q_value = data['q_value']
-
-                self.__train_inputs[i : i + 1] = state
-                self.__train_targets[i] = q_value.data
+                
+                Q_value = self.__network(state)
                 Q_sa = self.__network(state_prime)
-
+                self.__train_inputs[i : i + 1] = state
+                self.__train_targets[i] = Q_value.data
                 self.__train_targets[i, action] = reward + AiController.GAMMA * self.xp.max(Q_sa.data)
 
             x = self.__network(self.__train_inputs.astype(self.xp.float32))
@@ -173,7 +173,7 @@ class AiController(object):
 
             print("LOSS: {}".format(loss.data))
 
-            if self.__timestamp % 100 == 0:
+            if self.__timestamp % 10000 == 0:
                 self.log('save model!')
                 self.save()
 
