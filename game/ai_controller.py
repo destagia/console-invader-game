@@ -38,8 +38,10 @@ class AiController(object):
         self.__network = QNetwork()
 
         if gpu >= 0:
-            cuda.get_device(gpu).use()
+            device = cuda.get_device(int(gpu))
+            device.use()
             self.__network.to_gpu()
+            print('GPU MODE: {0}'.format(device))
 
         self.xp = self.__network.xp
 
