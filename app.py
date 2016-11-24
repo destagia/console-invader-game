@@ -10,7 +10,7 @@ parser.add_argument('-m','--mode', help='train / run', required=True)
 parser.add_argument('-o','--output', help='game / data', default="game")
 parser.add_argument('-p','--plot', help='on / off', default="off")
 parser.add_argument('-s','--strategy', help='greedy / egreedy / softmax', default="softmax")
-parser.add_argument('-g','--gpu', help='on / off', default="off")
+parser.add_argument('-g','--gpu', help='device number', default=-1)
 
 args = parser.parse_args()
 
@@ -23,7 +23,7 @@ controller = AiController(game,
                           args.strategy,
                           args.mode == "train",
                           args.output == "game",
-                          args.gpu == 'on')
+                          args.gpu)
 
 player.position.x = int(Game.DISPLAY_WIDTH / 2)
 

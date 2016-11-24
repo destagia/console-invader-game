@@ -2,7 +2,7 @@
 
 from game import Game
 import random
-from chainer import Chain, Variable, optimizers
+from chainer import Chain, Variable, optimizers, cuda
 import chainer.functions as F
 import chainer.links     as L
 import numpy             as np
@@ -36,7 +36,8 @@ class AiController(object):
         self.__game = game
         self.__player = player
         self.__network = QNetwork()
-        if gpu:
+        if gpu >= 0:
+            cuda.get_device(gpu).use()
             self.__network.to_gpu()
         self.xp = self.__network.xp
 
