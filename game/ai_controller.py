@@ -23,6 +23,19 @@ class QNetwork(Chain):
         h5 = self.l2(h4)
         return h5
 
+class Average(object):
+    def __init__(self, size):
+        self.__size = size
+        self.__values = deque()
+
+    def add(self, value):
+        self.__values.append(value)
+        if len(self.__values) > self.__size:
+            self.__values.popleft()
+
+    def average(self):
+        return sum(self.__values) / float(len(self.__values))
+
 class AiController(object):
     OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
@@ -52,6 +65,7 @@ class AiController(object):
         self.__point = 0.0
 
         self.__history = deque()
+        self.__loss_average = Average(1000)
 
         self.__train_inputs = self.__network.xp.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
         self.__train_targets = self.__network.xp.zeros((AiController.BATCH, 3))
@@ -91,15 +105,9 @@ class AiController(object):
         return self.__network.xp.asarray(x)
 
     def random_history(self, size):
-        # indices = self.xp.random.random_integers(self.__history_size, size=size)
-        # return map(lambda i: self.__history[i], indices)
         return random.sample(self.__history, AiController.BATCH)
 
     def push_history(self, step_data):
-        # self.__history_cursor += 1
-        # self.__history_size = self.xp.max([self.__history_size, self.__history_cursor])
-        # self.__history_cursor = self.__history_cursor % AiController.REPLAY_MEMORY
-        # self.__history[cursor] - step_data
         self.__history.append(step_data)
         if len(self.__history) > AiController.REPLAY_MEMORY:
             self.__history.popleft()
@@ -170,10 +178,11 @@ class AiController(object):
                 self.__train_targets[i, action] = reward + AiController.GAMMA * self.xp.max(Q_sa.data)
 
             x = self.__network(self.__train_inputs.astype(self.xp.float32))
-            loss = F.mean_squared_error(x, self.__train_targets.astype(self.xp.float32))
+            t = self.__train_targets.astype(self.xp.float32)
+            loss = F.mean_squared_error(x, t)
             self.__optimizer.update(lambda: loss)
-
-            print("LOSS: {}".format(loss.data))
+            self.__loss_average.add(loss.data)
+            print("Average LOSS: {}".format(self.__loss_average.average()))
 
             if self.__timestamp % 10000 == 0:
                 self.log('save model!')
