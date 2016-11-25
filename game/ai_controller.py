@@ -13,13 +13,15 @@ import os.path
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
-            conv1=F.Convolution2D(3, 32, ksize=(1, 10), pad=0),
-            l1=F.Linear(960, 256),
+            conv1=F.Convolution2D(3,  16, ksize=(1, 10), pad=0),
+            conv2=F.Convolution2D(16, 32, ksize=(3, 1),  pad=0),
+            l1=F.Linear(832, 256),
             l2=F.Linear(256, 3))
 
     def __call__(self, state):
-        h1 = F.leaky_relu(self.conv1(state))
-        h4 = F.leaky_relu(self.l1(h1))
+        h1 = F.relu(self.conv1(state))
+        h2 = F.relu(self.conv2(h1))
+        h4 = F.relu(self.l1(h2))
         h5 = self.l2(h4)
         return h5
 
@@ -29,13 +31,14 @@ class AiController(object):
     BATCH = 32
     GAMMA = 0.97
 
-    def __init__(self, game, player, policy, with_train, verbose, gpu):
+    def __init__(self, game, player, policy, with_train, verbose, gpu, save_file):
         self.__with_train = with_train
         self.__verbose = verbose
         self.__policy = policy
         self.__game = game
         self.__player = player
         self.__network = QNetwork()
+        self.__save_file = save_file
 
         if gpu >= 0:
             device = cuda.get_device(int(gpu))
@@ -63,11 +66,15 @@ class AiController(object):
             print(str)
 
     def save(self):
-        S.save_hdf5('network.model', self.__network)
+        if self.__save_file is None:
+            return
+        S.save_hdf5(self.__save_file, self.__network)
 
     def load(self):
-        if os.path.isfile('network.model'):
-            S.load_hdf5('network.model', self.__network)
+        if self.__save_file is None:
+            return
+        if os.path.isfile(self.__save_file):
+            S.load_hdf5(self.__save_file, self.__network)
 
     def get_display_as_state(self):
         state = []
