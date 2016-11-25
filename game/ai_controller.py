@@ -11,13 +11,6 @@ import chainer.serializers as S
 import os.path
 import time
 
-
-class Human(object):
-    pass
-
-human = Human()
-human.hoge = 10
-
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
@@ -176,7 +169,6 @@ class AiController(object):
                     x[i][j] = 0.0
                 if point is not None:
                     state[point.state_index()][i][j] = 1.0
-        print(state)
         return state
 
     def current_state(self):
