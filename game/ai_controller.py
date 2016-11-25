@@ -13,9 +13,8 @@ import os.path
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
-            conv1=F.Convolution2D(3,  16, ksize=(1, 10), pad=0),
-            conv2=F.Convolution2D(16, 32, ksize=(3, 1),  pad=0),
-            l1=F.Linear(832, 256),
+            conv1=F.Convolution2D(3, 32, ksize=(1, 10), pad=0),
+            l1=F.Linear(960, 256),
             l2=F.Linear(256, 3))
 
     def __call__(self, state):
