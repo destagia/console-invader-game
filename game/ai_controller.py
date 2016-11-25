@@ -9,10 +9,24 @@ import numpy             as np
 from collections import deque
 import chainer.serializers as S
 import os.path
+import time
 
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
+            l1=F.Linear(None, 512),
+            l2=F.Linear(512, 256),
+            l3=F.Linear(256, 3))
+
+    def __call__(self, state):
+        h1 = F.relu(self.l1(state))
+        h2 = F.relu(self.l2(h1))
+        h3 = self.l3(h2)
+        return h3
+
+class Conv1QNetwork(Chain):
+    def __init__(self):
+        super(Conv1QNetwork, self).__init__(
             conv1=F.Convolution2D(3, 32, ksize=(1, 10), pad=0),
             l1=F.Linear(960, 256),
             l2=F.Linear(256, 3))
@@ -20,6 +34,36 @@ class QNetwork(Chain):
     def __call__(self, state):
         h1 = F.relu(self.conv1(state))
         h4 = F.relu(self.l1(h1))
+        h5 = self.l2(h4)
+        return h5
+
+class Conv2QNetwork(Chain):
+    def __init__(self):
+        super(Conv2QNetwork, self).__init__(
+            conv1=F.Convolution2D(3,  16, ksize=(1, 10), pad=0),
+            conv2=F.Convolution2D(16, 32, ksize=(3, 1),  pad=0),
+            l1=F.Linear(832, 256),
+            l2=F.Linear(256, 3))
+
+    def __call__(self, state):
+        h1 = F.relu(self.conv1(state))
+        h2 = F.relu(self.conv2(h1))
+        h4 = F.relu(self.l1(h2))
+        h5 = self.l2(h4)
+        return h5
+
+class AtariQNetwork(Chain):
+    def __init__(self):
+        super(AtariQNetwork, self).__init__(
+            conv1=F.Convolution2D(3,  16, ksize=4, stride=2),
+            conv2=F.Convolution2D(16, 32, ksize=2, stride=1),
+            l1=F.Linear(None, 256),
+            l2=F.Linear(256, 3))
+
+    def __call__(self, state):
+        h1 = F.relu(self.conv1(state))
+        h2 = F.relu(self.conv2(h1))
+        h4 = F.relu(self.l1(h2))
         h5 = self.l2(h4)
         return h5
 
@@ -49,17 +93,27 @@ class AiController(object):
     BATCH = 32
     GAMMA = 0.97
 
-    def __init__(self, game, player, policy, with_train, verbose, gpu, save_file):
-        self.__with_train = with_train
-        self.__verbose = verbose
-        self.__policy = policy
-        self.__game = game
-        self.__player = player
-        self.__network = QNetwork()
-        self.__save_file = save_file
+    def __init__(self, game, player, args):
+        self.__with_train = args.mode == 'train'
+        self.__verbose    = args.output == 'game'
+        self.__policy     = args.strategy
+        self.__save_file  = args.file
 
-        if gpu >= 0:
-            device = cuda.get_device(int(gpu))
+        self.__game       = game
+        self.__player     = player
+        self.__frametime  = time.time()
+
+        if args.network == "normal":
+            self.__network = QNetwork()
+        if args.network == "conv1":
+            self.__network = Conv1QNetwork()
+        if args.network == "conv2":
+            self.__network = Conv2QNetwork()
+        if args.network == "atari":
+            self.__network = AtariQNetwork()
+
+        if args.gpu >= 0:
+            device = cuda.get_device(int(args.gpu))
             device.use()
             self.__network.to_gpu()
             print('GPU MODE: {0}'.format(device))
@@ -158,6 +212,12 @@ class AiController(object):
         self.__timestamp += 1
         ###################################################################################
 
+        if not self.__with_train:
+            frametime = time.time()
+            while frametime - self.__frametime < 0.1:
+                frametime = time.time()
+            self.__frametime = frametime
+
         curr_point = self.__game.total_point() - prev_point
         self.__point = self.__point * AiController.GAMMA + (curr_point / 100.0)
 
@@ -173,7 +233,7 @@ class AiController(object):
             "state_prime": state_prime,
         })
 
-        if self.__timestamp > AiController.OBSERVE_FRAME:
+        if self.__with_train and self.__timestamp > AiController.OBSERVE_FRAME:
             minibatch = self.random_history(AiController.BATCH)
 
             for i in range(0, len(minibatch)):

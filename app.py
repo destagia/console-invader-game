@@ -6,12 +6,14 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser(description='Invader Game with Deep Reinforcement Learning!')
-parser.add_argument('-m','--mode', help='train / run', required=True)
-parser.add_argument('-o','--output', help='game / data', default="game")
-parser.add_argument('-p','--plot', help='on / off', default="off")
-parser.add_argument('-s','--strategy', help='greedy / egreedy / softmax', default="softmax")
-parser.add_argument('-g','--gpu', help='device number', default=-1)
-parser.add_argument('-f','--file', help='model file path', default=None)
+
+parser.add_argument('-n', '--network',  help='normal / conv1 / conv2 / conv3', required=True                  )
+parser.add_argument('-m', '--mode',     help='train / run',                                  default="run"    )
+parser.add_argument('-o', '--output',   help='game / data',                                  default="game"   )
+parser.add_argument('-p', '--plot',     help='on / off',                                     default="off"    )
+parser.add_argument('-s', '--strategy', help='greedy / egreedy / softmax',                   default="egreedy")
+parser.add_argument('-g', '--gpu',      help='device number',                                default=-1       )
+parser.add_argument('-f' ,'--file',     help='model file path',                              default=None     )
 
 args = parser.parse_args()
 
@@ -19,13 +21,7 @@ game = Game()
 enemy_pool = EnemyPool()
 
 player = Player(game)
-controller = AiController(game,
-                          player,
-                          args.strategy,
-                          args.mode == "train",
-                          args.output == "game",
-                          args.gpu,
-                          args.file)
+controller = AiController(game, player, args)
 
 player.position.x = int(Game.DISPLAY_WIDTH / 2)
 
