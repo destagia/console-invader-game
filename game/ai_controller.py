@@ -26,15 +26,22 @@ class QNetwork(Chain):
 class Average(object):
     def __init__(self, size):
         self.__size = size
+        self.__sum_value = 0.0
+        self.__average_value = 0.0
+        self.__value_count = 0
         self.__values = deque()
 
     def add(self, value):
+        if self.__value_count < self.__size:
+            self.__value_count += 1
+        else:
+            self.__sum_value -= self.__values.popleft()
+        self.__sum_value += value
+        self.__average_value = self.__sum_value / self.__value_count
         self.__values.append(value)
-        if len(self.__values) > self.__size:
-            self.__values.popleft()
 
     def average(self):
-        return sum(self.__values) / float(len(self.__values))
+        return self.__average_value
 
 class AiController(object):
     OBSERVE_FRAME = 3200
