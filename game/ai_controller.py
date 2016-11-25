@@ -19,8 +19,7 @@ class QNetwork(Chain):
 
     def __call__(self, state):
         h1 = F.relu(self.conv1(state))
-        h2 = F.relu(self.conv2(h1))
-        h4 = F.relu(self.l1(h2))
+        h4 = F.relu(self.l1(h1))
         h5 = self.l2(h4)
         return h5
 
