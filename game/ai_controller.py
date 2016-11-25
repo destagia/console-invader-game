@@ -11,6 +11,13 @@ import chainer.serializers as S
 import os.path
 import time
 
+
+class Human(object):
+    pass
+
+human = Human()
+human.hoge = 10
+
 class QNetwork(Chain):
     def __init__(self):
         super(QNetwork, self).__init__(
@@ -131,6 +138,16 @@ class AiController(object):
 
         self.__train_inputs = self.__network.xp.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
         self.__train_targets = self.__network.xp.zeros((AiController.BATCH, 3))
+        self.__state_cache = []
+        for _ in range(0, 3):
+            a = []
+            self.__state_cache.append(a)
+            for _ in range(0, Game.DISPLAY_HEIGHT):
+                b = []
+                a.append(b)
+                for _ in range(0, Game.DISPLAY_WIDTH):
+                    b.append(0.0)
+
 
         self.load()
 
@@ -150,21 +167,21 @@ class AiController(object):
             S.load_hdf5(self.__save_file, self.__network)
 
     def get_display_as_state(self):
-        state = []
-        for line in self.__game.current_display():
-            state_line = []
-            state.append(state_line)
-            for point in line:
-                value = [0.0, 0.0, 0.0]
-                if point != None:
-                    value[point.state_index()] = 1.0
-                state_line.append(value)
+        state = self.__state_cache
+        display = self.__game.current_display()
+        for i in range(0, len(display)):
+            for j in range(0, len(display[i])):
+                point = display[i][j]
+                for x in state:
+                    x[i][j] = 0.0
+                if point is not None:
+                    state[point.state_index()][i][j] = 1.0
+        print(state)
         return state
 
     def current_state(self):
-        state = self.xp.asarray(self.get_display_as_state())
+        state = self.xp.asarray([self.get_display_as_state()])
         state = state.astype(self.xp.float32)
-        state = state.reshape(1, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH)
         return state
 
     def asarray(self, x):
