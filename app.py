@@ -48,6 +48,8 @@ def console_game():
     game.render()
 
 def console_data():
+    if args.strategy == 'egreedy':
+        print('epsilon: {}'.format(controller.epsilon))
     print("{},{}".format(frame_count, reward_per_100frames - (enemy_count_per100frames * 100)))
 
 def empty_func():

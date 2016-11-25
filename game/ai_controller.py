@@ -93,6 +93,10 @@ class AiController(object):
     BATCH = 32
     GAMMA = 0.97
 
+    INITIAL_EPSILON = 1.0
+    FINAL_EPSILON = 0.01
+    EXPLORELATION_FRAME = 1000000
+
     def __init__(self, game, player, args):
         self.__with_train = args.mode == 'train'
         self.__verbose    = args.output == 'game'
@@ -141,7 +145,7 @@ class AiController(object):
                 for _ in range(0, Game.DISPLAY_WIDTH):
                     b.append(0.0)
 
-
+        self.epsilon = AiController.INITIAL_EPSILON
         self.load()
 
     def log(self, str):
@@ -195,7 +199,7 @@ class AiController(object):
             action = self.xp.argmax(q_value.data.reshape(-1))
             self.log("GREEDY: {}".format(action))
         elif self.__policy == 'egreedy':
-            if random.random() < 0.1:
+            if random.random() <= self.epsilon:
                 action = random.randint(0, 2)
                 self.log("ε-greedy RANDOM: {}".format(action))
             else:
@@ -206,6 +210,9 @@ class AiController(object):
             prob = q_value_soft.data.reshape(-1)
             action = np.random.choice(len(prob), p=prob)
             self.log("Q: {}, SOFTMAX: {}".format(q_value.data, q_value_soft.data))
+
+        if self.epsilon > AiController.FINAL_EPSILON and self.__timestamp >  AiController.OBSERVE_FRAME:
+            self.epsilon -= (AiController.INITIAL_EPSILON - AiController.FINAL_EPSILON) / float(AiController.EXPLORELATION_FRAME)
 
         if action == 0:
             self.__player.move_left()
@@ -263,6 +270,7 @@ class AiController(object):
             loss = F.mean_squared_error(x, t)
             self.__optimizer.update(lambda: loss)
             self.__loss_average.add(loss.data)
+            print('LOSS: {}'.format(loss.data))
             print("Average LOSS: {}".format(self.__loss_average.average()))
 
             if self.__timestamp % 10000 == 0:
