@@ -12,7 +12,7 @@ class Game():
 
     def add(self, game_object):
         self.__game_objects.append(game_object)
-        self.__game_objects = sorted(self.__game_objects, key=lambda go: go.update_prior())
+        self.__game_objects = sorted(self.__game_objects, key=lambda go: -go.update_prior())
 
     def current_display(self):
         return self.__filled_display

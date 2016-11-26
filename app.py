@@ -79,7 +79,7 @@ while True:
         e_x = random.randint(0, Game.DISPLAY_WIDTH - 1)
         e_y = random.randint(Game.DISPLAY_HEIGHT / 2, Game.DISPLAY_HEIGHT - 1)
         obj = game.get_by_position(e_x, e_y)
-        if obj == None:
+        if obj is None:
             game.add(Enemy(Position(e_x, e_y), game))
             enemy_count_per100frames += 1
 
