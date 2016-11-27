@@ -52,6 +52,23 @@ class Conv2QNetwork(Chain):
         h5 = self.l2(h4)
         return h5
 
+class Conv3QNetwork(Chain):
+    def __init__(self):
+        super(Conv3QNetwork, self).__init__(
+            conv1=F.Convolution2D(3, 32, ksize=(1, 10), pad=0),
+            l1=F.Linear(960, 512),
+            l2=F.Linear(512, 256),
+            l3=F.Linear(256, 128),
+            l4=F.Linear(128, 3))
+
+    def __call__(self, state):
+        h1 = F.relu(self.conv1(state))
+        h2 = F.relu(self.l1(h1))
+        h3 = F.relu(self.l2(h2))
+        h4 = F.relu(self.l3(h3))
+        h5 = self.l4(h4)
+        return h5
+
 class AtariQNetwork(Chain):
     def __init__(self):
         super(AtariQNetwork, self).__init__(
@@ -91,11 +108,11 @@ class AiController(object):
     OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
     BATCH = 32
-    GAMMA = 0.97
+    GAMMA = 0.99
 
-    INITIAL_EPSILON = 0.3
+    INITIAL_EPSILON = 0.5
     FINAL_EPSILON = 0.01
-    EXPLORELATION_FRAME = 1000000
+    EXPLORELATION_FRAME = 200000
 
     def __init__(self, game, player, args):
         self.__with_train = args.mode == 'train'
@@ -113,6 +130,8 @@ class AiController(object):
             self.__network = Conv1QNetwork()
         if args.network == "conv2":
             self.__network = Conv2QNetwork()
+        if args.network == "conv3":
+            self.__network = Conv3QNetwork()
         if args.network == "atari":
             self.__network = AtariQNetwork()
 
@@ -168,12 +187,20 @@ class AiController(object):
         display = self.__game.current_display()
         for i in range(0, len(display)):
             for j in range(0, len(display[i])):
-                point = display[i][j]
                 for x in state:
                     x[i][j] = 0.0
+        for i in range(0, len(display)):
+            for j in range(0, len(display[i])):
+                point = display[i][j]
                 if point is not None:
-                    state[point.state_index()][i][j] = 1.0
+                    state[point.state_index()][i][j] += 1.0
         return state
+
+    def print_state(self, state):
+        for channel in state:
+            print('=========')
+            for row in channel:
+                print(row)
 
     def current_state(self):
         state = self.xp.asarray([self.get_display_as_state()])
@@ -194,6 +221,7 @@ class AiController(object):
     def next(self):
         state = self.asarray(self.current_state())
         q_value = self.__network(state)
+        print('Q Value: {}'.format(q_value.data))
 
         if self.__policy == 'greedy':
             action = self.xp.argmax(q_value.data.reshape(-1))
@@ -203,7 +231,8 @@ class AiController(object):
                 action = random.randint(0, 2)
                 self.log("ε-greedy RANDOM: {}".format(action))
             else:
-                action = self.xp.argmax(q_value.data.reshape(-1))
+                _q_value_data = q_value.data.reshape(-1)
+                action = self.xp.argmax(_q_value_data)
                 self.log("ε-greedy GREEDY: {}".format(action))
         elif self.__policy == 'softmax':
             q_value_soft = F.softmax(q_value / 0.1)
@@ -258,7 +287,7 @@ class AiController(object):
                 action = int(data['action'])
                 reward = data['reward']
                 state_prime = data['state_prime']
-                
+
                 Q_value = self.__network(state)
                 Q_sa = self.__network(state_prime)
                 self.__train_inputs[i : i + 1] = state

@@ -19,7 +19,7 @@ class Bullet():
             return
         for go in self.__game.game_objects():
             if go != None and isinstance(go, Enemy):
-                if go.position == self.position:
+                if go.position == self.position or go.position == (self.position - Position(0, 1)):
                     # go is an Enemy instance, so it has is_dead property
                     go.is_dead = True
                     self.is_dead = True
