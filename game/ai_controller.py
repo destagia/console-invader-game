@@ -110,7 +110,7 @@ class AiController(object):
     BATCH = 32
     GAMMA = 0.99
 
-    INITIAL_EPSILON = 0.5
+    INITIAL_EPSILON = 0.3
     FINAL_EPSILON = 0.01
     EXPLORELATION_FRAME = 200000
 
