@@ -65,7 +65,7 @@ else:
 def plot_on():
     lines.set_data(range(len(point_history)), point_history)
     ax.set_xlim((0, len(point_history)))
-    ax.set_ylim((np.min(point_history) - 100, np.max(point_history) + 100))
+    ax.set_ylim((np.min(point_history), np.max(point_history)))
     plt.waitforbuttonpress(timeout=.01)
 
 if args.plot == 'on':
@@ -75,7 +75,7 @@ else:
 
 while True:
     # Spawn enemy randomly!
-    if random.uniform(0, 1) < 0.1:
+    if random.uniform(0, 1) < 0.05:
         e_x = random.randint(0, Game.DISPLAY_WIDTH - 1)
         e_y = random.randint(Game.DISPLAY_HEIGHT / 2, Game.DISPLAY_HEIGHT - 1)
         obj = game.get_by_position(e_x, e_y)
@@ -90,15 +90,15 @@ while True:
     reward_per_100frames += (curr_frame_total_point - prev_frame_total_point)
     prev_frame_total_point = curr_frame_total_point
 
-    frame_count += 1
-
     # Plot the reward per 100 frames
-    if frame_count % 100 == 0:
+    if frame_count >= 3200 and frame_count % 100 == 0:
         # This value converges to 0 if the AI is perfect
-        point_history.append(reward_per_100frames - (enemy_count_per100frames * 100))
+        point_history.append(min(controller.loss_average.history()[-1], 0.2))
         plot()
         reward_per_100frames = 0
         enemy_count_per100frames = 0
+
+    frame_count += 1
 
     console()
 

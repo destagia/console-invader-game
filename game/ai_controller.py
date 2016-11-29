@@ -91,6 +91,7 @@ class Average(object):
         self.__average_value = 0.0
         self.__value_count = 0
         self.__values = deque()
+        self.__history = []
 
     def add(self, value):
         if self.__value_count < self.__size:
@@ -100,19 +101,23 @@ class Average(object):
         self.__sum_value += value
         self.__average_value = self.__sum_value / self.__value_count
         self.__values.append(value)
+        self.__history.append(self.__average_value)
 
     def average(self):
         return self.__average_value
+
+    def history(self):
+        return self.__history
 
 class AiController(object):
     OBSERVE_FRAME = 3200
     REPLAY_MEMORY = 50000
     BATCH = 32
-    GAMMA = 0.99
+    GAMMA = 0.5
 
     INITIAL_EPSILON = 0.3
     FINAL_EPSILON = 0.01
-    EXPLORELATION_FRAME = 200000
+    EXPLORELATION_FRAME = 1000000
 
     def __init__(self, game, player, args):
         self.__with_train = args.mode == 'train'
@@ -150,7 +155,7 @@ class AiController(object):
         self.__point = 0.0
 
         self.__history = deque()
-        self.__loss_average = Average(1000)
+        self.loss_average = Average(1000)
 
         self.__train_inputs = self.__network.xp.zeros((AiController.BATCH, 3, Game.DISPLAY_HEIGHT, Game.DISPLAY_WIDTH))
         self.__train_targets = self.__network.xp.zeros((AiController.BATCH, 3))
@@ -180,6 +185,7 @@ class AiController(object):
         if self.__save_file is None:
             return
         if os.path.isfile(self.__save_file):
+            print('loaded model!')
             S.load_hdf5(self.__save_file, self.__network)
 
     def get_display_as_state(self):
@@ -298,9 +304,9 @@ class AiController(object):
             t = self.__train_targets.astype(self.xp.float32)
             loss = F.mean_squared_error(x, t)
             self.__optimizer.update(lambda: loss)
-            self.__loss_average.add(loss.data)
+            self.loss_average.add(loss.data)
             print('LOSS: {}'.format(loss.data))
-            print("Average LOSS: {}".format(self.__loss_average.average()))
+            print("Average LOSS: {}".format(self.loss_average.average()))
 
             if self.__timestamp % 10000 == 0:
                 self.log('save model!')
