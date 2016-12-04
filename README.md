@@ -1,5 +1,6 @@
-同じものを使いまわして学習を行う
+# Console Invader Game
 
-Q関数を使う回数を減らして高速化する
-
-そしてGPU化する
+```
+pip install -r requirements.txt
+python app.py -m run -n conv1 -f conv1.model -s greedy  
+```
